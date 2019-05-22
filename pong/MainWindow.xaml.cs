@@ -39,7 +39,14 @@ namespace pong
                 Width = 20,
                 Height = 100
             };
+            Canvas.SetTop(player1, player1Pos.Y);
+            Canvas.SetLeft(player1, player1Pos.X);
 
+            Canvas.SetTop(player2, player2Pos.Y);
+            Canvas.SetLeft(player2, player2Pos.X);
+
+            Canvas.SetTop(ball, ballPos.Y);
+            Canvas.SetLeft(ball, ballPos.X);
         }
 
         Point boardSize = new Point(800, 450);
@@ -47,8 +54,8 @@ namespace pong
         int player2Score = 0;
         Point player1Pos = new Point(10, 200);
         Point player2Pos = new Point(770, 200);
-        Point ballPos = new Point(0, 200);
-        Vector ballSpeed = new Vector(3, 1);
+        Point ballPos = new Point(200, 200);
+        Vector ballSpeed = new Vector(5, 1);
         Ellipse ball = new Ellipse
         {
             Fill = Brushes.Red,
@@ -69,17 +76,27 @@ namespace pong
             {
                 ballSpeed.Y *= -1;
             }
+            if(ballPos.X + ball.Width >= player2Pos.X && ballPos.Y + ball.Height/2 <= player2Pos.Y + player2.Height && ballPos.Y + ball.Height/2 >= player2Pos.Y)
+            {
+                ballSpeed.X *= -1;
+            }
+            if (ballPos.X <= player1Pos.X + player1.Width && ballPos.Y + ball.Height / 2 <= player1Pos.Y + player1.Height && ballPos.Y + ball.Height / 2 >= player1Pos.Y)
+            {
+                ballSpeed.X *= -1;
+            }
             ballPos = Point.Add(ballPos, ballSpeed);
             Canvas.SetTop(ball, ballPos.Y);
             Canvas.SetLeft(ball, ballPos.X);
         }
         private void updatePlayers()
         {
-            Canvas.SetTop(player1, player1Pos.Y);
-            Canvas.SetLeft(player1, player1Pos.X);
+            Point mousePos = GetMousePos();
 
+            player1Pos.Y = map(mousePos.Y,0,window.Height,0,boardSize.Y - player2.Height/2);
+            player2Pos.Y = map(mousePos.Y,0,window.Height,0,boardSize.Y - player2.Height/2);
+
+            Canvas.SetTop(player1, player1Pos.Y);
             Canvas.SetTop(player2, player2Pos.Y);
-            Canvas.SetLeft(player2, player2Pos.X);
         }
         int checkForWin()
         {
@@ -87,7 +104,7 @@ namespace pong
             {
                 return 1;
             }
-            else if (ballPos.X < 0)
+            else if (ballPos.X + ball.Width < 0)
             {
                 return 2;
             }
@@ -110,9 +127,17 @@ namespace pong
             whoWon = checkForWin();
             if (whoWon != 0)
             {
-                Console.WriteLine("xDDD");
                 timer.Stop();
             }
+        }
+        Point GetMousePos()
+        {
+            return Mouse.GetPosition(Application.Current.MainWindow);
+
+        }
+        double map(double s, double a1, double a2, double b1, double b2)
+        {
+            return b1 + (s - a1) * (b2 - b1) / (a2 - a1);
         }
     }
 
