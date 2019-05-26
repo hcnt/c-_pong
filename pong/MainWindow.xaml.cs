@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -13,6 +14,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using Microsoft.Kinect;
 
 
 namespace pong
@@ -23,12 +25,27 @@ namespace pong
     /// 
     class PongGame
     {
-
+        Size boardSize = new Size(800, 450);
+        int player1Score = 0;
+        int player2Score = 0;
+        Point player1Pos = new Point(10, 200);
+        Point player2Pos = new Point(770, 200);
+        List<Point> oldPlayer1Positions = new List<Point>();
+        List<Point> oldPlayer2Positions = new List<Point>();
+        Point ballPos = new Point(200, 200);
+        Vector ballSpeed = new Vector(6, 2);
+        KinectHandler kinectHandler = new KinectHandler();
+        Rectangle ball;
+        Rectangle player1;
+        Rectangle player2;
+        int whoWon = 0;
+        DispatcherTimer timer = new DispatcherTimer();
+        MainWindow window;
         public PongGame(MainWindow window)
         {
             this.window = window;
             player1 = new Rectangle
-                {
+            {
                 Fill = Brushes.Black,
                 Width = 20,
                 Height = 100
@@ -39,6 +56,14 @@ namespace pong
                 Width = 20,
                 Height = 100
             };
+
+            ball = new Rectangle
+            {
+                Fill = Brushes.Red,
+                Width = 20,
+                Height = 20
+            };
+
             Canvas.SetTop(player1, player1Pos.Y);
             Canvas.SetLeft(player1, player1Pos.X);
 
@@ -47,32 +72,13 @@ namespace pong
 
             Canvas.SetTop(ball, ballPos.Y);
             Canvas.SetLeft(ball, ballPos.X);
+
+            window.playAgainButton.Click += playAgainHandler;
+            window.playAgainButton.Visibility = Visibility.Collapsed;
         }
-
-        Point boardSize = new Point(800, 450);
-        int player1Score = 0;
-        int player2Score = 0;
-        Point player1Pos = new Point(10, 200);
-        Point player2Pos = new Point(770, 200);
-        Point ballPos = new Point(200, 200);
-        Vector ballSpeed = new Vector(5, 1);
-        Ellipse ball = new Ellipse
-        {
-            Fill = Brushes.Red,
-            Width = 50,
-            Height = 50
-        };
-
-        Rectangle player1;
-        Rectangle player2;
-
-        int whoWon = 0;
-        DispatcherTimer timer = new DispatcherTimer();
-        MainWindow window;
-
         private void updateBall()
         {
-            if(ballPos.Y + ball.Width >= boardSize.Y || ballPos.Y <= 0)
+            if(ballPos.Y + ball.Width >= boardSize.Height || ballPos.Y <= 0)
             {
                 ballSpeed.Y *= -1;
             }
@@ -90,17 +96,27 @@ namespace pong
         }
         private void updatePlayers()
         {
-            Point mousePos = GetMousePos();
+          
+            Point newPlayer1Pos = GetMousePos();//kinectHandler.point;
+            Point newPlayer2Pos = GetMousePos(); //kinectHandler.point2;
 
-            player1Pos.Y = map(mousePos.Y,0,window.Height,0,boardSize.Y - player2.Height/2);
-            player2Pos.Y = map(mousePos.Y,0,window.Height,0,boardSize.Y - player2.Height/2);
+            if (newPlayer1Pos.X > newPlayer2Pos.X)
+            {
+                Point tmp = newPlayer1Pos;
+                newPlayer1Pos = newPlayer2Pos;
+                newPlayer2Pos = tmp;
+            }
+
+            player1Pos.Y = map(newPlayer1Pos.Y,15,450,-player1.Height/2,boardSize.Height - player2.Height*2/3);
+            player2Pos.Y = map(newPlayer2Pos.Y,15,450,-player1.Height/2,boardSize.Height - player2.Height*2/3);
+
 
             Canvas.SetTop(player1, player1Pos.Y);
             Canvas.SetTop(player2, player2Pos.Y);
         }
         int checkForWin()
         {
-            if (ballPos.X > boardSize.X)
+            if (ballPos.X > boardSize.Width)
             {
                 return 1;
             }
@@ -110,25 +126,63 @@ namespace pong
             }
             return 0;
         }
+
+        public void playAgainHandler(object sender, RoutedEventArgs e)
+        {
+            setStartingPosition();
+            window.playAgainButton.Visibility = Visibility.Collapsed;
+            whoWon = 0;
+        }
+        public void setStartingPosition()
+        {
+            whoWon = 0;
+            player1Pos = new Point(10, 200);
+            player2Pos = new Point(770, 200);
+            ballPos = new Point(200, 200);
+            ballSpeed = new Vector(5, 1);
+        }
         public void startGame()
         {
             window.paintCanvas.Children.Add(ball);
             window.paintCanvas.Children.Add(player1);
             window.paintCanvas.Children.Add(player2);
             timer.Tick += new EventHandler(playFrame);
-            timer.Interval = new TimeSpan(0, 0, 0,0, 1);
+            timer.Interval = new TimeSpan(0, 0, 0, 0, 1);
             timer.Start();
+            kinectHandler.SetupKinectSensor();
         }
        
         private void playFrame(object sender, EventArgs e)
         {
-            updateBall();
-            updatePlayers();
-            whoWon = checkForWin();
-            if (whoWon != 0)
+            Point mousePos = GetMousePos();
+
+            int cursorY = (int) mousePos.Y;  //(int) map((int)kinectHandler.point.Y, 100, 300, 0, window.Height);
+            int cursorX = (int) mousePos.X; //(int) map((int)kinectHandler.point.X, 0, 300, 0, window.Width);
+            
+            //MainWindow.SetCursor(cursorX,cursorY);
+            if (whoWon == 0) //&& kinectHandler.kinectTracking)
             {
-                timer.Stop();
+                updateBall();
+                updatePlayers();
+                whoWon = checkForWin();
+                window.text.Content = kinectHandler.skeletonsLength.ToString();
             }
+            else if (whoWon != 0)
+            {
+                //window.playAgainButton.Visibility = Visibility.Visible;
+                if(whoWon == 1)
+                {
+                    player1Score += 1;
+                    window.points1.Content = player1Score.ToString();
+                } else if(whoWon == 2)
+                {
+                    player2Score += 1;
+                    window.points2.Content = player1Score.ToString();
+                }
+                whoWon = 0;
+                setStartingPosition();
+            }
+
         }
         Point GetMousePos()
         {
@@ -143,9 +197,22 @@ namespace pong
 
     public partial class MainWindow : Window
     {
+        [DllImport("User32.dll")]
+        private static extern bool SetCursorPos(int X, int Y);
+
+        public static void SetCursor(int x, int y)
+        {
+            // Left boundary
+            var xL = (int)App.Current.MainWindow.Left;
+            // Top boundary
+            var yT = (int)App.Current.MainWindow.Top;
+
+            SetCursorPos(x + xL, y + yT);
+        }
         public MainWindow()
         {
             InitializeComponent();
+            //Mouse.OverrideCursor = Cursors.None;
             PongGame game = new PongGame(this);
             game.startGame();
 
