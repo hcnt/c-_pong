@@ -37,12 +37,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Emgu.CV.UI, Version=4.0.1.3373, Culture=neutral, PublicKeyToken=7281126722ab4438, processorArchitecture=MSIL">
-      <HintPath>..\packages\EMGU.CV.4.0.1.3373\lib\net35\Emgu.CV.UI.dll</HintPath>
-    </Reference>
-    <Reference Include="Emgu.CV.World, Version=4.0.1.3373, Culture=neutral, PublicKeyToken=7281126722ab4438, processorArchitecture=MSIL">
-      <HintPath>..\packages\EMGU.CV.4.0.1.3373\lib\net35\Emgu.CV.World.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.Kinect, Version=1.8.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Data" />
