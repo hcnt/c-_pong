@@ -32,13 +32,16 @@ namespace pong
         Point player2Pos = new Point(770, 200);
         List<Point> oldPlayer1Positions = new List<Point>();
         List<Point> oldPlayer2Positions = new List<Point>();
+        double player1Speed;
+        double player2Speed;
         Point ballPos = new Point(200, 200);
-        Vector ballSpeed = new Vector(6, 2);
+        Vector ballSpeed = new Vector(7, 4);
         KinectHandler kinectHandler = new KinectHandler();
         Rectangle ball;
         Rectangle player1;
         Rectangle player2;
         int whoWon = 0;
+        int whichPlayerIsPlaying = 2;
         DispatcherTimer timer = new DispatcherTimer();
         MainWindow window;
         public PongGame(MainWindow window)
@@ -48,13 +51,16 @@ namespace pong
             {
                 Fill = Brushes.Black,
                 Width = 20,
-                Height = 100
+                Height = 100,
+                HorizontalAlignment = HorizontalAlignment.Center
             };
             player2 = new Rectangle
             {
                 Fill = Brushes.Black,
                 Width = 20,
-                Height = 100
+                Height = 100,
+                HorizontalAlignment = HorizontalAlignment.Center
+
             };
 
             ball = new Rectangle
@@ -82,25 +88,56 @@ namespace pong
             {
                 ballSpeed.Y *= -1;
             }
-            if(ballPos.X + ball.Width >= player2Pos.X && ballPos.Y + ball.Height/2 <= player2Pos.Y + player2.Height && ballPos.Y + ball.Height/2 >= player2Pos.Y)
+            if(ballPos.X + ball.Width >= player2Pos.X && ballPos.Y + ball.Height/2 <= player2Pos.Y + player2.Height && ballPos.Y + ball.Height/2 >= player2Pos.Y && whichPlayerIsPlaying == 2)
             {
                 ballSpeed.X *= -1;
+                calculateNewBallSpeed(-0.15 * player2Speed);
+                whichPlayerIsPlaying = 1;
             }
-            if (ballPos.X <= player1Pos.X + player1.Width && ballPos.Y + ball.Height / 2 <= player1Pos.Y + player1.Height && ballPos.Y + ball.Height / 2 >= player1Pos.Y)
+            if (ballPos.X <= player1Pos.X + player1.Width && ballPos.Y + ball.Height / 2 <= player1Pos.Y + player1.Height && ballPos.Y + ball.Height / 2 >= player1Pos.Y && whichPlayerIsPlaying == 1)
             {
                 ballSpeed.X *= -1;
+                calculateNewBallSpeed(-0.15 * player1Speed);
+                whichPlayerIsPlaying = 2;
+
             }
             ballPos = Point.Add(ballPos, ballSpeed);
             Canvas.SetTop(ball, ballPos.Y);
             Canvas.SetLeft(ball, ballPos.X);
         }
+
+        void calculateNewBallSpeed(double yd)
+        {
+            ballSpeed.Y += yd;
+            ballSpeed.Normalize();
+            ballSpeed *= 8;
+        }
         private void updatePlayers()
         {
-          
+
             Point newPlayer1Pos = GetMousePos();//kinectHandler.point;
             Point newPlayer2Pos = GetMousePos(); //kinectHandler.point2;
 
-            if (newPlayer1Pos.X > newPlayer2Pos.X)
+            oldPlayer1Positions.Add(new Point(newPlayer1Pos.X, newPlayer1Pos.Y));
+            oldPlayer2Positions.Add(new Point(newPlayer2Pos.X, newPlayer2Pos.Y));
+
+            if(oldPlayer1Positions.Count() > 5)
+            {
+                oldPlayer1Positions.RemoveAt(0);
+            }
+
+            if (oldPlayer2Positions.Count() > 5)
+            {
+                oldPlayer2Positions.RemoveAt(0);
+            }
+
+            player1Speed = oldPlayer1Positions[0].Y - oldPlayer1Positions[oldPlayer1Positions.Count()-1].Y;
+            player2Speed = oldPlayer2Positions[0].Y - oldPlayer2Positions[oldPlayer2Positions.Count() - 1].Y;
+
+            //player2.Width = 20 - Math.Log10(Math.Abs(player2Speed)+0.1)*2;
+            //player1.Width = 20 - Math.Log10(Math.Abs(player1Speed)+0.1)*2;
+
+            if (newPlayer2Pos.X > newPlayer2Pos.X)
             {
                 Point tmp = newPlayer1Pos;
                 newPlayer1Pos = newPlayer2Pos;
@@ -139,7 +176,8 @@ namespace pong
             player1Pos = new Point(10, 200);
             player2Pos = new Point(770, 200);
             ballPos = new Point(200, 200);
-            ballSpeed = new Vector(5, 1);
+            ballSpeed = new Vector(8, 1);
+            whichPlayerIsPlaying = 2;
         }
         public void startGame()
         {
@@ -165,7 +203,7 @@ namespace pong
                 updateBall();
                 updatePlayers();
                 whoWon = checkForWin();
-                window.text.Content = kinectHandler.skeletonsLength.ToString();
+                window.text.Content = ballSpeed.Length.ToString();
             }
             else if (whoWon != 0)
             {
