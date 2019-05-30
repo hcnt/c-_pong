@@ -32,18 +32,23 @@ namespace pong
         Point player2Pos = new Point(770, 200);
         List<Point> oldPlayer1Positions = new List<Point>();
         List<Point> oldPlayer2Positions = new List<Point>();
+        Point player1PosTarget;
+        Point player2PosTarget;
         double player1Speed;
         double player2Speed;
-        Point ballPos = new Point(200, 200);
-        Vector ballSpeed = new Vector(7, 4);
+        Point ballPos;
+        Vector ballSpeed;
         KinectHandler kinectHandler = new KinectHandler();
         Rectangle ball;
         Rectangle player1;
         Rectangle player2;
+        Rectangle test;
         int whoWon = 0;
         int whichPlayerIsPlaying = 2;
+        bool kinectMode = false;
         DispatcherTimer timer = new DispatcherTimer();
         MainWindow window;
+        double xD = 0;
         public PongGame(MainWindow window)
         {
             this.window = window;
@@ -62,7 +67,6 @@ namespace pong
                 HorizontalAlignment = HorizontalAlignment.Center
 
             };
-
             ball = new Rectangle
             {
                 Fill = Brushes.Red,
@@ -70,6 +74,12 @@ namespace pong
                 Height = 20
             };
 
+            test = new Rectangle
+            {
+                Fill = Brushes.Blue,
+                Width = 20,
+                Height = 20
+            };
             Canvas.SetTop(player1, player1Pos.Y);
             Canvas.SetLeft(player1, player1Pos.X);
 
@@ -78,6 +88,7 @@ namespace pong
 
             Canvas.SetTop(ball, ballPos.Y);
             Canvas.SetLeft(ball, ballPos.X);
+
 
             window.playAgainButton.Click += playAgainHandler;
             window.playAgainButton.Visibility = Visibility.Collapsed;
@@ -106,20 +117,63 @@ namespace pong
             Canvas.SetLeft(ball, ballPos.X);
         }
 
+        void setRandomStartingBallDirection()
+        {
+            bool areValuesInGoodRange = false;
+            Random rnd = new Random();
+            double x = 0;
+            double y = 0;
+            while (!areValuesInGoodRange)
+            {
+                x = map(rnd.NextDouble(), 0, 1, -1, 1);
+                y = map(rnd.NextDouble(), 0, 1, -1, 1);
+                if(y/x < 1 && y/x > -1)
+                {
+                    areValuesInGoodRange = true;
+                }
+            }
+            ballSpeed = new Vector(x, y);
+            ballSpeed.Normalize();
+            ballSpeed *= 6;
+        }
         void calculateNewBallSpeed(double yd)
         {
-            ballSpeed.Y += yd;
-            ballSpeed.Normalize();
-            ballSpeed *= 8;
+            xD = yd;
+            yd /= 2;
+            if (yd < 0)
+            {
+                ballSpeed.Y -= Math.Log10(1 - yd)*4;
+            }
+            else
+            {
+                ballSpeed.Y += Math.Log10(1 + yd)*4;
+            }
+            //ballSpeed.Normalize();
+            //ballSpeed *= 8;
         }
         private void updatePlayers()
         {
 
-            Point newPlayer1Pos = GetMousePos();//kinectHandler.point;
-            Point newPlayer2Pos = GetMousePos(); //kinectHandler.point2;
+            if (kinectMode) {
+               //player1PosTarget.X = map(kinectHandler.point1.X,15,450,-player1.Height/2,boardSize.Height - player2.Height*2/3);
+               player1PosTarget.Y = map(kinectHandler.point1.Y,15,450,-player1.Height/2-20,boardSize.Height - player2.Height*2/3);
+               //player2PosTarget.X = map(kinectHandler.point2.X,25,450,-player2.Height/2,boardSize.Height - player2.Height*2/3);
+               player2PosTarget.Y = map(kinectHandler.point2.Y,25,450,-player2.Height/2-20,boardSize.Height - player2.Height*2/3);
 
-            oldPlayer1Positions.Add(new Point(newPlayer1Pos.X, newPlayer1Pos.Y));
-            oldPlayer2Positions.Add(new Point(newPlayer2Pos.X, newPlayer2Pos.Y));
+               Canvas.SetTop(test, player1PosTarget.Y);
+               Canvas.SetLeft(test, player1PosTarget.X);
+
+               player1Pos.Y = player1Pos.Y + (player1PosTarget.Y - player1Pos.Y) * 0.4;
+               player2Pos.Y = player2Pos.Y + (player2PosTarget.Y - player2Pos.Y) * 0.4;
+            } else
+            {
+                player1Pos.Y = GetMousePos().Y;
+                player2Pos.Y = GetMousePos().Y;
+            }
+
+
+            oldPlayer1Positions.Add(new Point(player1Pos.X, player1Pos.Y));
+            oldPlayer2Positions.Add(new Point(player2Pos.X, player2Pos.Y));
 
             if(oldPlayer1Positions.Count() > 5)
             {
@@ -137,16 +191,10 @@ namespace pong
             //player2.Width = 20 - Math.Log10(Math.Abs(player2Speed)+0.1)*2;
             //player1.Width = 20 - Math.Log10(Math.Abs(player1Speed)+0.1)*2;
 
-            if (newPlayer2Pos.X > newPlayer2Pos.X)
-            {
-                Point tmp = newPlayer1Pos;
-                newPlayer1Pos = newPlayer2Pos;
-                newPlayer2Pos = tmp;
-            }
-
-            player1Pos.Y = map(newPlayer1Pos.Y,15,450,-player1.Height/2,boardSize.Height - player2.Height*2/3);
-            player2Pos.Y = map(newPlayer2Pos.Y,15,450,-player1.Height/2,boardSize.Height - player2.Height*2/3);
-
+            //player1Pos.Y = map(newPlayer1Pos.Y,15,450,-player1.Height/2,boardSize.Height - player2.Height*2/3);
+            //player2Pos.Y = map(newPlayer2Pos.Y,15,450,-player1.Height/2,boardSize.Height - player2.Height*2/3);
+            //player1Pos = newPlayer1Pos;
+            //player2Pos = newPlayer2Pos;
 
             Canvas.SetTop(player1, player1Pos.Y);
             Canvas.SetTop(player2, player2Pos.Y);
@@ -175,35 +223,41 @@ namespace pong
             whoWon = 0;
             player1Pos = new Point(10, 200);
             player2Pos = new Point(770, 200);
-            ballPos = new Point(200, 200);
-            ballSpeed = new Vector(8, 1);
-            whichPlayerIsPlaying = 2;
+            ballPos = new Point(window.Width/2,window.Height/2);
+            setRandomStartingBallDirection();
+            if (ballSpeed.X < 0)
+            {
+                whichPlayerIsPlaying = 1;
+            } else
+            {
+                whichPlayerIsPlaying = 2;
+            }
         }
         public void startGame()
         {
             window.paintCanvas.Children.Add(ball);
+            //window.paintCanvas.Children.Add(test);
             window.paintCanvas.Children.Add(player1);
             window.paintCanvas.Children.Add(player2);
             timer.Tick += new EventHandler(playFrame);
-            timer.Interval = new TimeSpan(0, 0, 0, 0, 1);
+            timer.Interval = new TimeSpan(0, 0, 0, 0, 2);
             timer.Start();
+            setStartingPosition();
             kinectHandler.SetupKinectSensor();
         }
        
         private void playFrame(object sender, EventArgs e)
         {
             Point mousePos = GetMousePos();
-
-            int cursorY = (int) mousePos.Y;  //(int) map((int)kinectHandler.point.Y, 100, 300, 0, window.Height);
-            int cursorX = (int) mousePos.X; //(int) map((int)kinectHandler.point.X, 0, 300, 0, window.Width);
-            
+            // int cursorY = (int)mousePos.Y; // (int) map((int)kinectHandler.point.Y, 100, 300, 0, window.Height);
+            //int cursorX = (int)mousePos.X; //  map((int)kinectHandler.point.X, 0, 300, 0, window.Width);
             //MainWindow.SetCursor(cursorX,cursorY);
-            if (whoWon == 0) //&& kinectHandler.kinectTracking)
+            if (whoWon == 0 && (kinectHandler.kinectTracking || !kinectMode))
             {
                 updateBall();
                 updatePlayers();
                 whoWon = checkForWin();
-                window.text.Content = ballSpeed.Length.ToString();
+                //window.text.Content = xD.ToString();
             }
             else if (whoWon != 0)
             {
@@ -215,17 +269,15 @@ namespace pong
                 } else if(whoWon == 2)
                 {
                     player2Score += 1;
-                    window.points2.Content = player1Score.ToString();
+                    window.points2.Content = player2Score.ToString();
                 }
                 whoWon = 0;
                 setStartingPosition();
             }
-
         }
         Point GetMousePos()
         {
             return Mouse.GetPosition(Application.Current.MainWindow);
-
         }
         double map(double s, double a1, double a2, double b1, double b2)
         {
@@ -253,7 +305,6 @@ namespace pong
             //Mouse.OverrideCursor = Cursors.None;
             PongGame game = new PongGame(this);
             game.startGame();
-
         }
     }
 }

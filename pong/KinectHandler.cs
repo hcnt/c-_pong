@@ -12,10 +12,12 @@
 
     public partial class KinectHandler
     {
-        public Point point;
+        public Point point1;
         public Point point2;
         public bool kinectTracking = false;
         public int skeletonsLength = 0;
+        public List<Point> points1 = new List<Point>(); 
+        public List<Point> points2 = new List<Point>(); 
 
         private KinectSensor sensor;
 
@@ -126,11 +128,35 @@
 
             if (skeletonNumber == 0)
             {
-                point = SkeletonPointToScreen(handJoint.Position);
+               points1.Add(SkeletonPointToScreen(handJoint.Position));
+                //point1 = SkeletonPointToScreen(handJoint.Position);
             } else if (skeletonNumber == 1)
             {
-                point2 = SkeletonPointToScreen(handJoint.Position);
+                //point2 = SkeletonPointToScreen(handJoint.Position);
+                points2.Add(SkeletonPointToScreen(handJoint.Position));
             }
+            point1 = ArithmeticAverage(points1,1);
+            point2 = ArithmeticAverage(points2,1);
+
+            if(point1.X > point2.X)
+            {
+                Point tmp = point1;
+                point1 = point2;
+                point2 = tmp;
+            }
+        }
+        public Point ArithmeticAverage(List<Point> points,int val = 3)
+        {
+            int amount = 0;
+            double sumX = 0;
+            double sumY = 0;
+            for (int i = points.Count - 1; i >= 0 && i >= points.Count - 1 - val; i--)
+            {
+                sumX += points[i].X;
+                sumY += points[i].Y;
+                amount++;
+            }
+            return new Point(sumX / amount, sumY / amount);
         }
 
         private Point SkeletonPointToScreen(SkeletonPoint skelpoint)
