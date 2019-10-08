@@ -23,6 +23,15 @@ namespace pong
     /// Logika interakcji dla klasy MainWindow.xaml
     /// </summary>
     /// 
+
+    enum GameState
+    {
+        PLAYER1WON = 1,
+        PLAYER2WON = 2,
+        WAITINGFORPLAYERS = 3,
+        GAMEISRUNNING = 4 
+
+    }
     class PongGame
     {
         Size boardSize = new Size(800, 450);
@@ -45,10 +54,11 @@ namespace pong
         Rectangle test;
         int whoWon = 0;
         int whichPlayerIsPlaying = 2;
-        bool kinectMode = false;
+        bool kinectMode = true;
         DispatcherTimer timer = new DispatcherTimer();
         MainWindow window;
         double xD = 0;
+        int activePlayers = 0;
         public PongGame(MainWindow window)
         {
             this.window = window;
@@ -88,7 +98,6 @@ namespace pong
 
             Canvas.SetTop(ball, ballPos.Y);
             Canvas.SetLeft(ball, ballPos.X);
-
 
             window.playAgainButton.Click += playAgainHandler;
             window.playAgainButton.Visibility = Visibility.Collapsed;
@@ -134,7 +143,7 @@ namespace pong
             }
             ballSpeed = new Vector(x, y);
             ballSpeed.Normalize();
-            ballSpeed *= 6;
+            ballSpeed *= 8;
         }
         void calculateNewBallSpeed(double yd)
         {
@@ -170,7 +179,6 @@ namespace pong
                 player1Pos.Y = GetMousePos().Y;
                 player2Pos.Y = GetMousePos().Y;
             }
-
 
             oldPlayer1Positions.Add(new Point(player1Pos.X, player1Pos.Y));
             oldPlayer2Positions.Add(new Point(player2Pos.X, player2Pos.Y));
@@ -240,20 +248,23 @@ namespace pong
             window.paintCanvas.Children.Add(player1);
             window.paintCanvas.Children.Add(player2);
             timer.Tick += new EventHandler(playFrame);
-            timer.Interval = new TimeSpan(0, 0, 0, 0, 2);
+            timer.Interval = new TimeSpan(0, 0, 0, 0, 10);
             timer.Start();
             setStartingPosition();
             kinectHandler.SetupKinectSensor();
         }
-       
         private void playFrame(object sender, EventArgs e)
         {
             Point mousePos = GetMousePos();
             // int cursorY = (int)mousePos.Y; // (int) map((int)kinectHandler.point.Y, 100, 300, 0, window.Height);
             //int cursorX = (int)mousePos.X; //  map((int)kinectHandler.point.X, 0, 300, 0, window.Width);
             //MainWindow.SetCursor(cursorX,cursorY);
-            if (whoWon == 0 && (kinectHandler.kinectTracking || !kinectMode))
+            window.centerLabel.Content = "Oczekiwanie na graczy " + kinectHandler.numberOfSkeletonsActive.ToString() + "/2";
+            if (whoWon == 0 && (kinectHandler.kinectTracking && kinectHandler.numberOfSkeletonsActive > 0  || !kinectMode))
             {
+                //if (window.centerLabel.Visibility == Visibility.Visible){
+                //    window.centerLabel.Visibility = Visibility.Hidden;
+                //}
                 updateBall();
                 updatePlayers();
                 whoWon = checkForWin();
@@ -261,6 +272,10 @@ namespace pong
             }
             else if (whoWon != 0)
             {
+                if (window.centerLabel.Visibility == Visibility.Hidden)
+                {
+                    window.centerLabel.Visibility = Visibility.Visible;
+                }
                 //window.playAgainButton.Visibility = Visibility.Visible;
                 if(whoWon == 1)
                 {
@@ -284,7 +299,6 @@ namespace pong
             return b1 + (s - a1) * (b2 - b1) / (a2 - a1);
         }
     }
-
     public partial class MainWindow : Window
     {
         [DllImport("User32.dll")]

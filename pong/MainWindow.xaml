@@ -17,6 +17,7 @@
             <Button FontSize="14" Name="playAgainButton" Content="Wciśnij aby zagrać jeszcze raz" Width="189" RenderTransformOrigin="4.688,10.139" Canvas.Left="300" Canvas.Top="138" Height="89"/>
             <Label FontSize="30" Name="points1" Content="0" Canvas.Left="214"/>
             <Label FontSize="30" Name="points2" Content="0" Canvas.Left="544"/>
+            <Label Name ="centerLabel" Content="Oczekiwanie na graczy 0/2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Canvas.Left="300" Canvas.Top="138" Width="189" Height="89"/>
         </Canvas>
     </Grid>
 </Window>

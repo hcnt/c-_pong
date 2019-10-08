@@ -17,7 +17,8 @@
         public bool kinectTracking = false;
         public int skeletonsLength = 0;
         public List<Point> points1 = new List<Point>(); 
-        public List<Point> points2 = new List<Point>(); 
+        public List<Point> points2 = new List<Point>();
+        public int numberOfSkeletonsActive = 0;
 
         private KinectSensor sensor;
 
@@ -30,10 +31,8 @@
 
         private List<UserControl> userControls;
         private int slideIndex = 0;
-
         public void SetupKinectSensor()
         {
-
             foreach (var potentialSensor in KinectSensor.KinectSensors)
             {
                 if (potentialSensor.Status == KinectStatus.Connected)
@@ -70,7 +69,6 @@
             GreenYellowBrush.Color = Colors.GreenYellow;
             SolidColorBrush WhiteBrush = new SolidColorBrush();
             WhiteBrush.Color = Colors.White;
-
             SetupKinectSensor();
         }
         
@@ -103,20 +101,21 @@
                     if (isScelTracked) {
                        // break;
                     }
-
-                    if (skeleton.TrackingState == SkeletonTrackingState.Tracked)
+                   
+                    if (skeleton.Joints[JointType.HandRight].TrackingState == JointTrackingState.Tracked)
                     {
                         Updates(skeleton, skeletonNumber);
                         skeletonNumber += 1;
                         isScelTracked = true;
                         kinectTracking = true;
                     }
-                    else if (skeleton.TrackingState == SkeletonTrackingState.NotTracked)
-                    {
+                    //else if (skeleton.TrackingState == SkeletonTrackingState.NotTracked)
+                    //{
                         
-                    }
+                    //}
                 }
             }
+            numberOfSkeletonsActive = skeletonNumber;
         }
 
         private void Updates(Skeleton skeleton,int skeletonNumber)
